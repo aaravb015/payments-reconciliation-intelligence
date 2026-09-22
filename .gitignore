@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Generated reconciliation data and benchmark outputs
+artifacts/v1_benchmark/
+data/synthetic/
+# Phase 2 reports, notebook outputs, caches and local analytical databases
+artifacts/
+*.duckdb
+*.duckdb.wal
