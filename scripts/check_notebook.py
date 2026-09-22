@@ -2,6 +2,7 @@
 import argparse
 import os
 from pathlib import Path
+import sys
 
 import nbformat
 from nbclient import NotebookClient
@@ -28,8 +29,14 @@ def main():
                     raise RuntimeError(f'Notebook cell {index} failed') from (result.error_before_exec or result.error_in_exec)
         print('Notebook cells executed successfully in process; source remains output-free.')
     else:
-        NotebookClient(notebook, timeout=180, kernel_name='python3',
-                       resources={'metadata': {'path': str(root)}}).execute()
+        client = NotebookClient(notebook, timeout=180, kernel_name='python3',
+                                resources={'metadata': {'path': str(root)}})
+        client.create_kernel_manager()
+        # Use this environment's packages, regardless of the user's default kernel.
+        client.km.kernel_spec.argv = [
+            sys.executable, '-m', 'ipykernel_launcher', '-f', '{connection_file}',
+        ]
+        client.execute()
         print('Notebook executed successfully in a fresh kernel; source remains output-free.')
 
 

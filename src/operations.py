@@ -101,7 +101,15 @@ def run_operations(internal: pd.DataFrame, gateway: pd.DataFrame, settlement: pd
         for name, frame in frames.items():
             contract = CONTRACTS[name]
             con.register("incoming", frame)
-            expressions = [f'CAST("{col}" AS DECIMAL(18,2)) AS "{col}"' if col in contract["money"] else (f'CAST("{col}" AS TIMESTAMP) AS "{col}"' if col == contract["time"] else f'CAST("{col}" AS VARCHAR) AS "{col}"') for col in frame.columns]
+            expressions = []
+            for col in frame.columns:
+                if col in contract["money"]:
+                    sql_type = "DECIMAL(18,2)"
+                elif col == contract["time"]:
+                    sql_type = "TIMESTAMP"
+                else:
+                    sql_type = "VARCHAR"
+                expressions.append(f'CAST("{col}" AS {sql_type}) AS "{col}"')
             con.execute(f'CREATE TABLE {name} AS SELECT {", ".join(expressions)} FROM incoming WHERE "{contract["time"]}" <= (SELECT as_of FROM run_config)')
             included = con.execute(f"SELECT count(*) FROM {name}").fetchone()[0]
             source_counts[name] = {"input_rows": len(frame), "included_rows": included, "future_rows_excluded": len(frame) - included}

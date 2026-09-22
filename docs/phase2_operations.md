@@ -16,10 +16,10 @@ The operational CLI reads exactly three known filenames. It neither imports gene
 
 ## Run from a clean checkout
 
-Python 3.11–3.13 is supported; CI tests 3.11 and 3.13.
+Python 3.11–3.13 is supported; CI tests 3.11, 3.12 and 3.13.
 
 ```bash
-git clone --branch dev-reconciliation-v1 https://github.com/aaravb015/payments-reconciliation-intelligence.git
+git clone https://github.com/aaravb015/payments-reconciliation-intelligence.git
 cd payments-reconciliation-intelligence
 python -m venv .venv
 # Linux/macOS; Windows: .venv\Scripts\activate
@@ -45,7 +45,7 @@ Generated datasets and notebook/report outputs remain under ignored `artifacts/`
 
 ## Source contracts and cutoff
 
-The original V1 fields remain compatible. Operations additionally requires ledger `merchant_id`, `payment_method`, and `currency` for trustworthy grouping. Required identifiers, dimensions, statuses and timestamps cannot be null or blank. The internal transaction key must be unique. Monetary inputs must be finite, nonnegative, below ₹10^13, and have at most two decimal places. These constraints deliberately exclude refunds/negative adjustments. Internal currency must be INR; the other two feeds are assumed to follow the same INR contract.
+The original V1 fields remain compatible. Operations additionally requires ledger `merchant_id`, `payment_method`, and `currency` for trustworthy grouping. Required identifiers, dimensions, statuses and timestamps cannot be null or blank. The internal transaction key must be unique. CSV reading preserves literal IDs such as `001`, `NA` and `NULL`; blank required fields are still rejected. Monetary inputs must be finite, nonnegative, below ₹10^13, and have at most two decimal places. These constraints deliberately exclude refunds/negative adjustments. Internal currency must be INR; the other two feeds are assumed to follow the same INR contract.
 
 `gateway_id` is optional on the gateway feed. Missing provider data becomes `unknown`; multiple providers on a duplicate transaction become `multiple`. Provider identity is not inferred. The unchanged V1 generator therefore produces an unknown-provider concentration row. Orphan merchant/payment-method attribution remains `unknown`.
 

@@ -32,8 +32,11 @@ def main():
     parser.add_argument('--fee-tolerance', type=float, default=0.05)
     args = parser.parse_args()
     paths = {k: Path(args.input_dir) / v for k, v in SOURCE_FILES.items()}
-    # String dtype preserves leading zeroes in identifiers when reading CSV.
-    sources = {k: pd.read_csv(p, dtype=str) for k, p in paths.items()}
+    # IDs such as "001", "NA" and "NULL" are literal keys, not missing-value markers.
+    sources = {
+        name: pd.read_csv(path, dtype=str, keep_default_na=False)
+        for name, path in paths.items()
+    }
     result = run_operations(**sources, as_of=args.as_of, config=ReconciliationConfig(
         amount_tolerance=args.amount_tolerance, fee_tolerance=args.fee_tolerance,
         max_settlement_days=args.max_settlement_days))

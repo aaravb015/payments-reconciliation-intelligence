@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import pytest
 from pandas.testing import assert_frame_equal
 
 from src.operations import run_operations
@@ -39,20 +40,22 @@ def test_report_escapes_source_strings_and_empty_tables(feeds,tmp_path):
     assert 'undefined (no observations)' in (tmp_path/'empty'/'management_report.html').read_text()
 
 
-def test_cli_runs_with_only_operational_sources_and_preserves_ids(feeds,tmp_path):
+@pytest.mark.parametrize('transaction_id', ['001', 'NA', 'NULL'])
+def test_cli_runs_with_only_operational_sources_and_preserves_ids(feeds,tmp_path,transaction_id):
     source=tmp_path/'input'
     source.mkdir()
     for frame,name in zip(feeds,['internal_payments.csv','gateway_transactions.csv','bank_settlements.csv']):
+        frame = frame.assign(transaction_id=transaction_id)
         frame.to_csv(source/name,index=False)
     # Deliberately invalid labels must never be parsed; deleting them is also safe.
     (source/'truth_exceptions.csv').write_bytes(b'\xff\xfe\x00')
     script=Path('scripts/run_operations.py').resolve()
     args=[sys.executable,str(script),'--input-dir',str(source),'--as-of','2026-02-10','--output-dir',str(tmp_path/'out')]
     subprocess.run(args,cwd=tmp_path,check=True,capture_output=True,text=True)
-    facts=pd.read_csv(tmp_path/'out'/'reconciliation_facts.csv',dtype={'transaction_id':str})
-    assert facts.iloc[0].transaction_id=='001'
+    facts=pd.read_csv(tmp_path/'out'/'reconciliation_facts.csv',dtype={'transaction_id':str},keep_default_na=False)
+    assert facts.iloc[0].transaction_id==transaction_id
     manifest=json.loads((tmp_path/'out'/'manifest.json').read_text())
     assert set(manifest['source_sha256'])=={'internal_payments.csv','gateway_transactions.csv','bank_settlements.csv'}
     (source/'truth_exceptions.csv').unlink()
     subprocess.run(args,cwd=tmp_path,check=True,capture_output=True,text=True)
-    assert_frame_equal(facts,pd.read_csv(tmp_path/'out'/'reconciliation_facts.csv',dtype={'transaction_id':str}))
+    assert_frame_equal(facts,pd.read_csv(tmp_path/'out'/'reconciliation_facts.csv',dtype={'transaction_id':str},keep_default_na=False))

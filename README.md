@@ -4,7 +4,13 @@
 
 A reproducible, synthetic three-way reconciliation system for an internal payment ledger, gateway records and bank settlements. It demonstrates **financial operations automation, DuckDB/SQL data engineering, deterministic controls, exposure analysis and management reporting**.
 
-> **Phase 2 is implemented on `dev-reconciliation-v1`. No merge to `main`.** This is a controlled synthetic portfolio project, not production certification, real-world accuracy, realized loss, or recovered cash.
+> **Controlled synthetic portfolio project.** The complete Python/SQL workflow is on `main`. Its results are not evidence of real-world accuracy, realized loss or recovered cash.
+
+## Start here
+
+For a finance or operations review, read the reference results below, then follow the [five-minute walkthrough](docs/demo_walkthrough.md). It connects a missing settlement, a fee difference and a duplicate record to the resulting investigation queue.
+
+For the implementation, start with [`sql/01_reconciliation.sql`](sql/01_reconciliation.sql) and [`src/operations.py`](src/operations.py). The separate [Transaction Fraud Intelligence](https://github.com/aaravb015/transaction-fraud-intelligence) project covers modelling and behavioural risk; this repository covers financial controls and operational reporting.
 
 ## Operational workflow
 
@@ -22,9 +28,14 @@ A reproducible, synthetic three-way reconciliation system for an internal paymen
 
 ## Quick start
 
-Use Python 3.11–3.13. From a checkout of the development branch:
+Use Python 3.11–3.13. From a clean checkout:
 
 ```bash
+git clone https://github.com/aaravb015/payments-reconciliation-intelligence.git
+cd payments-reconciliation-intelligence
+python -m venv .venv
+# Linux/macOS; Windows: .venv\Scripts\activate
+source .venv/bin/activate
 python -m pip install -r requirements.txt -c constraints.txt
 python -m pytest -q
 python scripts/run_benchmark.py --output-dir artifacts/v1_benchmark
@@ -82,7 +93,7 @@ The operational run writes:
 
 Source totals retain duplicates and orphans for auditability; comparable deltas only use unambiguous matches. Daily payment-cohort metrics and daily bank settlement totals use different dates explicitly. Empty denominators are undefined, not forced to zero.
 
-The V1 benchmark continues to write its original dataset, detections and evaluation artifacts. All bulk generated outputs are ignored by Git. CI tests Python 3.11/3.13, runs both command-line workflows, executes the notebook, and retains downloadable operational report artifacts.
+The V1 benchmark continues to write its original dataset, detections and evaluation artifacts. All bulk generated outputs are ignored by Git. CI tests Python 3.11/3.12/3.13, runs both command-line workflows, executes the notebook, and retains downloadable operational report artifacts.
 
 ## Repository guide
 
@@ -90,7 +101,7 @@ The V1 benchmark continues to write its original dataset, detections and evaluat
 |---|---|
 | [`docs/project_design.md`](docs/project_design.md) | Preserved V1 design contract |
 | [`docs/phase2_operations.md`](docs/phase2_operations.md) | Operational contracts, formulas, limitations and reproduction instructions |
-| `src/data_generator.py` | Unchanged seeded synthetic world and separate truth |
+| `src/data_generator.py` | Seeded synthetic world and separate truth |
 | `src/reconciliation.py` | Preserved V1 Python detector |
 | `src/evaluation.py` | Separate controlled-benchmark evaluation |
 | `src/operations.py` | Validated, truth-blind DuckDB orchestration |
@@ -107,7 +118,7 @@ The V1 benchmark continues to write its original dataset, detections and evaluat
 - Deterministic rules and SQL are the core; no machine learning has been added.
 - Current exposure uses the maximum financial discrepancy estimate per transaction plus overdue cash. This avoids overlapping signals but can understate independent discrepancies on the same payment.
 - Cash already received late is historical timing exposure, never outstanding cash. Status disagreements carry no direct monetary estimate in operational totals.
-- Required source fields are validated; money uses INR/paise precision. Exact transaction IDs are the matching key.
+- Required source fields are validated; money uses INR/paise precision. Exact transaction IDs are the matching key. CSV inputs preserve leading zeroes and literal IDs such as `NA` and `NULL`; blank required fields are rejected.
 - V1 has no provider identity, so gateway concentration is `unknown` unless an input supplies `gateway_id`.
 - This is an event-time snapshot without ingestion history, FX, refunds, partial/split settlements, business-day calendars, real integrations, automated recovery, or persistent case ownership/resolution. Duplicate rows are not proof of duplicate cash movement.
 - Queue age is a documented source-event/due-date proxy; `open_review` is a generated investigation state, not a real dispute-status assertion.
