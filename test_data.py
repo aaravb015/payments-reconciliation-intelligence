@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.data_generator import GenerationConfig, generate_data
+from generate_data import GenerationConfig, generate_data
 
 
 def test_generator_is_reproducible():
