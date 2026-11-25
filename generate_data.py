@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
 
 
-FEE_RATES: Dict[str, float] = {
+FEE_RATES = {
     "card": 0.0200,
     "upi": 0.0020,
     "net_banking": 0.0125,
@@ -46,12 +44,7 @@ def _recalculate_gateway_financials(df: pd.DataFrame, mask: pd.Series) -> None:
     )
 
 
-def generate_data(config: GenerationConfig = GenerationConfig()) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Generate synthetic internal, gateway, settlement, and truth datasets.
-
-    The truth dataframe is produced for evaluation only. Reconciliation code should
-    never require it as an input.
-    """
+def generate_data(config: GenerationConfig = GenerationConfig()):
     rng = np.random.default_rng(config.seed)
     n = config.n_transactions
     start = pd.Timestamp(config.start_date)
@@ -187,7 +180,7 @@ def generate_data(config: GenerationConfig = GenerationConfig()) -> Tuple[pd.Dat
     truth_counter = 1
     cursor = 0
 
-    def add_truth(tx_id: str, exception_type: str, source: str, reference_amount: float, notes: str) -> None:
+    def add_truth(tx_id, exception_type, source, reference_amount, notes):
         nonlocal truth_counter
         truth_rows.append(
             {
@@ -354,20 +347,3 @@ def generate_data(config: GenerationConfig = GenerationConfig()) -> Tuple[pd.Dat
     settlement = settlement.sort_values(["settled_at", "transaction_id", "settlement_line_id"], ignore_index=True)
 
     return internal, gateway, settlement, truth
-
-
-def write_dataset(output_dir: str | Path, config: GenerationConfig = GenerationConfig()) -> dict[str, Path]:
-    output = Path(output_dir)
-    output.mkdir(parents=True, exist_ok=True)
-    internal, gateway, settlement, truth = generate_data(config)
-    paths = {
-        "internal": output / "internal_payments.csv",
-        "gateway": output / "gateway_transactions.csv",
-        "settlement": output / "bank_settlements.csv",
-        "truth": output / "truth_exceptions.csv",
-    }
-    internal.to_csv(paths["internal"], index=False)
-    gateway.to_csv(paths["gateway"], index=False)
-    settlement.to_csv(paths["settlement"], index=False)
-    truth.to_csv(paths["truth"], index=False)
-    return paths
